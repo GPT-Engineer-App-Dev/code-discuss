@@ -1,11 +1,47 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, User, Settings, LogOut, Search, MessageSquare, Eye } from "lucide-react";
+import { Home, User, Settings, LogOut, MessageSquare, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const schema = z.object({
+  title: z.string().min(1, { message: "Title is required" }),
+  content: z.string().min(1, { message: "Content is required" }),
+});
+
 const Index = () => {
+  const [threads, setThreads] = useState([
+    { id: 1, title: "Thread Title 1", author: "Author1", date: "Date1", comments: 10, views: 100 },
+    { id: 2, title: "Thread Title 2", author: "Author2", date: "Date2", comments: 20, views: 200 },
+  ]);
+
+  const form = useForm({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = (data) => {
+    const newThread = {
+      id: threads.length + 1,
+      title: data.title,
+      author: "CurrentUser",
+      date: new Date().toLocaleDateString(),
+      comments: 0,
+      views: 0,
+    };
+    setThreads([...threads, newThread]);
+    toast("Post created successfully");
+    form.reset();
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -74,45 +110,74 @@ const Index = () => {
 
         {/* Forum Threads */}
         <main className="flex-grow p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">Forum Threads</h1>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="primary">Create Post</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create a New Post</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Title" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Content</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Content" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full">Submit</Button>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
           <Card className="mb-4">
             <CardHeader>
               <CardTitle>Forum Threads</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
-                <Link to="/thread/1" className="flex justify-between p-4 border rounded hover:bg-muted/40">
-                  <div>
-                    <h2 className="text-lg font-semibold">Thread Title 1</h2>
-                    <p className="text-sm text-muted-foreground">by Author1 on Date1</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>10</span>
+                {threads.map((thread) => (
+                  <Link key={thread.id} to={`/thread/${thread.id}`} className="flex justify-between p-4 border rounded hover:bg-muted/40">
+                    <div>
+                      <h2 className="text-lg font-semibold">{thread.title}</h2>
+                      <p className="text-sm text-muted-foreground">by {thread.author} on {thread.date}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
-                      <span>100</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{thread.comments}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{thread.views}</span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-                <Link to="/thread/2" className="flex justify-between p-4 border rounded hover:bg-muted/40">
-                  <div>
-                    <h2 className="text-lg font-semibold">Thread Title 2</h2>
-                    <p className="text-sm text-muted-foreground">by Author2 on Date2</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>20</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
-                      <span>200</span>
-                    </div>
-                  </div>
-                </Link>
-                {/* Add more threads as needed */}
+                  </Link>
+                ))}
               </div>
             </CardContent>
           </Card>
